@@ -27,6 +27,7 @@ TideULT is a self-hosted media platform built for people who want a complete, un
 - **FastAPI** — High-performance API layer
 - **React + TypeScript** — Modern, responsive frontend
 - **FFmpeg** — Transcoding and media processing
+- **PostgreSQL** — Database for storing information on your users
 
 ---
 
@@ -38,4 +39,4 @@ Every feature is optional. Every module is toggleable. You're always in control.
 
 ---
 
-*Did I mention this was open source?* 🌊
+*Did I mention this was open source?* 
