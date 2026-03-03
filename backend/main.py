@@ -1,8 +1,12 @@
 from fastapi import FastAPI
 from dotenv import load_dotenv
 import os
+import httpx
 
 load_dotenv()
+
+JELLYFIN_URL = os.getenv("JELLYFIN_URL")
+JELLYFIN_KEY = os.getenv("JELLYFIN_API_KEY")
 
 app = FastAPI(
     title="TideULT",
@@ -24,3 +28,12 @@ async def root():
         "message": "Welcome to TideULT 🌊",
         "docs": "/docs"
     }
+
+@app.get("/library")
+async def get_library():
+    async with httpx.AsyncClient() as client:
+        r = await client.get(
+            f"{JELLYFIN_URL}/Items",
+            params={"api_key": JELLYFIN_KEY, "IncludeItemTypes": "Movie,Series", "Recursive": True}
+        )
+        return r.json()
