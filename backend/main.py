@@ -4,7 +4,29 @@ import os
 import httpx
 from pydantic import BaseModel
 from typing import Optional, List
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 
+app = FastAPI(
+    title="TideULT",
+    description="The all-in-one media server that brings everything to shore.",
+    version="0.1.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.mount("/static", StaticFiles(directory="../frontend"), name="static")
+
+@app.get("/ui")
+async def serve_frontend():
+    return FileResponse("../frontend/index.html")
+    
 #formatting for the api
 class MediaItem(BaseModel):
     id: str
@@ -22,12 +44,6 @@ load_dotenv()
 
 JELLYFIN_URL = os.getenv("JELLYFIN_URL")
 JELLYFIN_KEY = os.getenv("JELLYFIN_API_KEY")
-
-app = FastAPI(
-    title="TideULT",
-    description="The all-in-one media server that brings everything to shore.",
-    version="0.1.0"
-)
 
 @app.get("/health")
 async def health():
@@ -68,3 +84,9 @@ async def get_library():
             for item in data.get("Items", [])
         ]
         return LibraryResponse(items=items, total=data.get("TotalRecordCount", 0))
+
+@app.get("/poster/{item_id}")
+async def get_poster(item_id: str):
+    from fastapi.responses import RedirectResponse
+    url = f"{JELLYFIN_URL}/Items/{item_id}/Images/Primary?api_key={JELLYFIN_KEY}"
+    return RedirectResponse(url)

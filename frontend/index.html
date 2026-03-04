@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TideULT 🌊</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0F172A;
+            color: #F1F5F9;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        header {
+            padding: 20px 0 40px 0;
+            border-bottom: 2px solid #06B6D4;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            color: #06B6D4;
+        }
+
+        header p {
+            color: #64748B;
+            margin-top: 5px;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .filter-btn {
+            background: #1E293B;
+            color: #94A3B8;
+            border: 1px solid #334155;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active, .filter-btn:hover {
+            background: #06B6D4;
+            color: #0F172A;
+            border-color: #06B6D4;
+            font-weight: bold;
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: #1E293B;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #334155;
+            transition: transform 0.2s, border-color 0.2s;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: #06B6D4;
+        }
+
+        .card-poster {
+            width: 100%;
+            aspect-ratio: 2/3;
+            object-fit: cover;
+            background: #334155;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+        }
+
+        .card-poster img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .card-info {
+            padding: 12px;
+        }
+
+        .card-title {
+            font-size: 0.95rem;
+            font-weight: bold;
+            color: #F1F5F9;
+            margin-bottom: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #64748B;
+        }
+
+        .card-rating {
+            color: #F59E0B;
+            font-weight: bold;
+        }
+
+        .card-type {
+            background: #0F172A;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            color: #06B6D4;
+        }
+
+        #loading {
+            text-align: center;
+            padding: 60px;
+            color: #64748B;
+            font-size: 1.2rem;
+        }
+
+        #total {
+            color: #64748B;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🌊 TideULT</h1>
+        <p>Your media. Your rules.</p>
+    </header>
+
+    <div class="filters">
+        <button class="filter-btn active" onclick="filterLibrary('all')">All</button>
+        <button class="filter-btn" onclick="filterLibrary('Movie')">Movies</button>
+        <button class="filter-btn" onclick="filterLibrary('Series')">Series</button>
+    </div>
+
+    <p id="total"></p>
+    <div id="loading">Loading your library... 🌊</div>
+    <div id="grid"></div>
+
+    <script>
+        const API = "http://localhost:8000"
+        const JELLYFIN = "YOUR_JELLYFIN_URL_HERE"
+        let allItems = []
+
+        const loadLibrary = async () => {
+            try {
+                const response = await fetch(`${API}/library`)
+                const data = await response.json()
+                allItems = data.items
+                renderGrid(allItems)
+                document.getElementById("loading").style.display = "none"
+                document.getElementById("total").textContent = 
+                    `${data.total} items in your library`
+            } catch (error) {
+                document.getElementById("loading").textContent = 
+                    "Couldn't connect to TideULT API 😢 Is it running?"
+            }
+        }
+
+        const renderGrid = (items) => {
+            const grid = document.getElementById("grid")
+            grid.innerHTML = ""
+
+            items.forEach(item => {
+                const posterUrl = 
+                    `${JELLYFIN}/Items/${item.id}/Images/Primary?api_key=YOUR_API_KEY`
+                
+                const card = document.createElement("div")
+                card.className = "card"
+                card.innerHTML = `
+                    <div class="card-poster">
+                        <img 
+                            src="${posterUrl}" 
+                            alt="${item.name}"
+                            onerror="this.parentElement.innerHTML='🎬'"
+                        />
+                    </div>
+                    <div class="card-info">
+                        <div class="card-title">${item.name}</div>
+                        <div class="card-meta">
+                            <span class="card-rating">
+                                ⭐ ${item.rating ? item.rating.toFixed(1) : "N/A"}
+                            </span>
+                            <span>${item.year || "?"}</span>
+                            <span class="card-type">${item.type}</span>
+                        </div>
+                    </div>
+                `
+                grid.appendChild(card)
+            })
+        }
+
+        const filterLibrary = (type) => {
+            document.querySelectorAll(".filter-btn").forEach(btn => {
+                btn.classList.remove("active")
+            })
+            event.target.classList.add("active")
+
+            if (type === "all") {
+                renderGrid(allItems)
+            } else {
+                renderGrid(allItems.filter(item => item.type === type))
+            }
+        }
+
+        loadLibrary()
+    </script>
+
+</body>
+</html>
