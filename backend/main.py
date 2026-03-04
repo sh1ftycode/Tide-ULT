@@ -39,6 +39,7 @@ async def get_library():
             params={"api_key": JELLYFIN_KEY, "IncludeItemTypes": "Movie,Series", "Recursive": True}
         )
         return r.json()
+#formatting for the api
 class MediaItem(BaseModel):
     id: str
     name: str
