@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from dotenv import load_dotenv
 import os
 import httpx
+from pydantic import BaseModel
+from typing import Optional, List
 
 load_dotenv()
 
@@ -37,3 +39,14 @@ async def get_library():
             params={"api_key": JELLYFIN_KEY, "IncludeItemTypes": "Movie,Series", "Recursive": True}
         )
         return r.json()
+class MediaItem(BaseModel):
+    id: str
+    name: str
+    type: str
+    year: Optional[int] = None
+    rating: Optional[float] = None
+    official_rating: Optional[str] = None
+
+class LibraryResponse(BaseModel):
+    items: List[MediaItem]
+    total: int
