@@ -5,6 +5,19 @@ import httpx
 from pydantic import BaseModel
 from typing import Optional, List
 
+#formatting for the api
+class MediaItem(BaseModel):
+    id: str
+    name: str
+    type: str
+    year: Optional[int] = None
+    rating: Optional[float] = None
+    official_rating: Optional[str] = None
+
+class LibraryResponse(BaseModel):
+    items: List[MediaItem]
+    total: int
+
 load_dotenv()
 
 JELLYFIN_URL = os.getenv("JELLYFIN_URL")
@@ -31,23 +44,27 @@ async def root():
         "docs": "/docs"
     }
 
-@app.get("/library")
+@app.get("/library", response_model=LibraryResponse)
 async def get_library():
     async with httpx.AsyncClient() as client:
         r = await client.get(
             f"{JELLYFIN_URL}/Items",
-            params={"api_key": JELLYFIN_KEY, "IncludeItemTypes": "Movie,Series", "Recursive": True}
+            params={
+                "api_key": JELLYFIN_KEY,
+                "IncludeItemTypes": "Movie,Series",
+                "Recursive": True
+            }
         )
-        return r.json()
-#formatting for the api
-class MediaItem(BaseModel):
-    id: str
-    name: str
-    type: str
-    year: Optional[int] = None
-    rating: Optional[float] = None
-    official_rating: Optional[str] = None
-
-class LibraryResponse(BaseModel):
-    items: List[MediaItem]
-    total: int
+        data = r.json()
+        items = [
+            MediaItem(
+                id=item["Id"],
+                name=item["Name"],
+                type=item["Type"],
+                year=item.get("ProductionYear"),
+                rating=item.get("CommunityRating"),
+                official_rating=item.get("OfficialRating")
+            )
+            for item in data.get("Items", [])
+        ]
+        return LibraryResponse(items=items, total=data.get("TotalRecordCount", 0))
